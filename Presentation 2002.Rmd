@@ -1,0 +1,301 @@
+---
+title: "Bodyfat"
+subtitle: "Group Project Presentation"
+author: "Group RE03E1"
+institute: "The University of Sydney"
+date: "2022/10/21"
+output:
+  xaringan::moon_reader:
+    css: [default, zh-CN.css]
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      
+---
+
+# Background 
+
+1. Bodyfat percentage with Health and Fitness 
+
+2. Density 
+    + % Body Fat = (495 / Body Density) - 450.
+
+3. Goal
+    + Determine if exits other varibles that can be predicted Pct.BF based on Siri equation?
+
+4. Stakeholder
+    + Human performance study and fitness
+
+
+---
+
+# Data description 
+
+- Dataset concerning human bodyfat percentage via BYU Human Performance Research Center
+
+- Variable introduction 
+ 
+```{r echo=FALSE, results='hide',message=FALSE}
+library(pastecs)
+library(gridExtra)
+library(tidyverse)
+library(knitr)
+library(dplyr)
+library(ggpubr)
+library(corrplot)
+library(qtlcharts)
+library(ggfortify)
+library(car)
+library(caret)
+library('sjPlot')
+data = read.table('bodyfat.txt', head = TRUE)
+```
+
+```{r echo=FALSE,warning=FALSE}
+rmarkdown::paged_table(data)
+```
+
+---
+
+# Data description
+
+
+- Measurement methods
+
+- Limitation: Presenting Outlier
+
+- Limitation: Bias
+
+```{r,echo=FALSE,warning=FALSE, fig.height=3.5}
+ggplot(data, aes(y = Pct.BF)) + 
+  geom_boxplot(fill = 6,           
+               alpha = 0.5,       
+               color = 1,          
+               outlier.colour = 6) + 
+  coord_flip() + labs(x = 'Pct.BF')
+```
+
+.pull-left[Figure 1: Outlier in Percentage of bodyfat]
+
+---
+
+# Model Selection
+
+- Heat map
+
+```{r,echo=FALSE,warning=FALSE, fig.height=4}
+corrplot(cor(data))
+```
+
+.pull-left[Figure 2: Heat map of correlations between variables]
+
+---
+
+# Model Selection
+
+```{r echo=FALSE, warning=FALSE, fig.height=4.5}
+grid.arrange(
+  ggplot(data,aes(x = Age,y = Pct.BF))+ geom_point(size = 0.2,colour = 1)+labs(x = 'Age', y = 'PBF'),
+  ggplot(data,aes(x = data$Density,y = Pct.BF))+ geom_point(size = 0.2,colour = 2)+labs(x = 'Density', y = 'PBF'),
+  ggplot(data,aes(x = data$Weight,y = Pct.BF))+ geom_point(size = 0.2,colour = 3)+labs(x = 'Weight', y = 'PBF'),
+  ggplot(data,aes(x = data$Height,y = Pct.BF))+ geom_point(size = 0.2,colour = 4)+labs(x = 'Height', y = 'PBF'),
+  ggplot(data,aes(x = data$Neck,y = Pct.BF))+ geom_point(size = 0.2,colour = 5)+labs(x = 'Neck', y = 'PBF'),
+  ggplot(data,aes(x = data$Chest,y = Pct.BF))+ geom_point(size = 0.2,colour = 6)+labs(x = 'Chest', y = 'PBF'),
+  ggplot(data,aes(x = data$Abdomen,y = Pct.BF))+ geom_point(size = 0.2,colour = 7)+labs(x = 'Abdomen', y = 'PBF'),
+  ggplot(data,aes(x = data$Waist,y = Pct.BF))+ geom_point(size = 0.2,colour = 8)+labs(x = 'Waist', y = 'PBF'),
+  ggplot(data,aes(x = data$Hip,y = Pct.BF))+ geom_point(size = 0.2,colour = 9)+labs(x = 'Hip', y = 'PBF'),
+  ggplot(data,aes(x = data$Thigh,y = Pct.BF))+ geom_point(size = 0.2,colour = 10)+labs(x = 'Thigh', y = 'PBF'),
+  ggplot(data,aes(x = data$Knee,y = Pct.BF))+ geom_point(size = 0.2,colour = 11)+labs(x = 'Knee', y = 'PBF'),
+  ggplot(data,aes(x = data$Ankle,y = Pct.BF))+ geom_point(size = 0.2,colour = 12)+labs(x = 'Ankle', y = 'PBF'),
+  ggplot(data,aes(x = data$Bicep,y = Pct.BF))+ geom_point(size = 0.2,colour = 13)+labs(x = 'Bicep', y = 'PBF'),
+  ggplot(data,aes(x = data$Forearm,y = Pct.BF))+ geom_point(size = 0.2,colour = 14)+labs(x = 'Forearm', y = 'PBF'),
+  ggplot(data,aes(x = data$Wrist,y = Pct.BF))+ geom_point(size = 0.2,colour = 15)+labs(x = 'Wrist', y = 'PBF'),
+  top = text_grob("")
+)
+```
+
+.pull-left[Figure 2: Scatter plot of correlations between variables]
+
+---
+
+```{r echo=FALSE, results='hide'}
+l_all = lm(Pct.BF ~., data = data)
+
+summary(l_all)
+```
+
+
+```{r echo=FALSE, results='hide'}
+M1 = lm(Pct.BF ~ ., data = data)
+M0 = lm(Pct.BF ~ 1, data = data)
+```
+
+# Forward and Backward Method selection
+
+
+```{r echo=FALSE}
+forward = step(M0, scope = list(lower = M0, upper = M1), 
+               direction = 'forward',
+               trace = FALSE, )
+summary(forward)
+```
+```{r echo=FALSE, results='hide'}
+backward = step(M1, direction = 'backward', trace = FALSE)
+summary(backward)
+```
+
+---
+
+# Model Selection
+
+```{r echo=FALSE, fig.height=3.5}
+lm1 = lm(data$Pct.BF ~ Age,
+         data = data)
+
+lm11 = autoplot(lm1, which = 2:1, colour = '#56C3DE')
+lm11
+```
+
+.pull-left[Figure 4: Rediduals and qq plot]
+
+
+```{r echo=FALSE, results='hide'}
+linear_linear = lm(Pct.BF ~ Density + Age + Abdomen, data)
+summary(linear_linear)
+```
+```{r echo=FALSE, results='hide'}
+data = data %>% 
+  mutate(logPct.BF = log(Pct.BF + 0.00000000000000001))
+
+log_linear = lm(logPct.BF ~ Density + Age + Abdomen, data)
+summary(log_linear)
+```
+```{r echo=FALSE, results='hide'}
+data = data %>% 
+  mutate(logAge = log(Age), logAbdomen = log(Abdomen))
+
+linear_log = lm(Pct.BF ~ Density + logAge + logAbdomen, data)
+summary(linear_log)
+```
+```{r echo=FALSE, results='hide'}
+log_log = lm(logPct.BF ~ Density + logAbdomen + logAge, data)
+summary(log_log)
+```
+
+---
+
+# Appropriate model selection
+```{r echo=FALSE, warming=FALSE, message=FALSE}
+sjPlot::tab_model(linear_linear,log_linear,linear_log,log_log, show.ci = FALSE)
+```
+
+---
+
+```{r echo=FALSE, results='hide',message=FALSE}
+# linear linear
+cv2 = train(
+  Pct.BF ~ Density + Abdomen + Age, data, method = 'lm',
+  trControl = trainControl(method = 'cv', number = 10, verboseIter = FALSE)
+)
+cv2
+```
+
+```{r echo=FALSE, results='hide',message=FALSE}
+# log-linear
+cv3 = train(
+  logPct.BF ~ Density + Abdomen + Age, data, method = 'lm',
+  trControl = trainControl(method = 'cv', number = 10, verboseIter = FALSE)
+)
+cv3
+```
+
+```{r echo=FALSE, results='hide',message=FALSE}
+# linear - log
+cv4 = train(
+  Pct.BF ~ Density + logAge + logAbdomen, data, method = 'lm',
+  trControl = trainControl(method = 'cv', number = 10, verboseIter = FALSE)
+)
+cv4
+```
+
+```{r echo=FALSE, results='hide',message=FALSE}
+#log - log
+cv5 = train(
+  logPct.BF ~ Density + logAge + logAbdomen, data, method = 'lm',
+  trControl = trainControl(method = 'cv', number = 10, verboseIter = FALSE)
+)
+cv5
+```
+
+```{r}
+
+
+## Assumption Check
+```{r echo=FALSE, fig.height=3.5}
+p2 = autoplot(linear_log, which = 2:1, colour = '#56C3DE')
+p2
+```
+
+```{r, warning=FALSE}
+durbinWatsonTest(linear_log)
+```
+
+
+---
+
+# Assessing Performance
+
+- R square / R square adjusted
+
+- Compare them to the observed values using the root mean square error:
+
+$$RMSE = \sqrt( \frac{\sum_{i=1}^n (y_i - \hat{y_i})^2 }{n} )$$
+
+-  An alternative measure of performance, less influenced by outliers is the mean absolute error:
+
+$$MAE = \frac{\sum_{i=1}^m |y_i - \hat{y_i}|}{m}$$
+---
+# Assessing Performance
+```{r echo=FALSE}
+results <- resamples(list(linear_linear = cv2,log_linear = cv3, linear_log = cv4, log_log =cv5))
+```
+
+```{r echo=FALSE}
+p5=ggplot(results, metric = "Rsquared") +labs(y = "Rsquared")
+
+p6=ggplot(results, metric = "RMSE") +labs(y = "MAE")
+
+p7=ggplot(results, metric = "MAE") +labs(y = "RMSE")
+
+ggarrange(p5, p6, p7,ncol = 1, nrow = 3)
+```
+
+---
+# Result
+
+```{r echo=FALSE}
+summary(linear_log)$coefficients | round(4)
+```
+
+- Fitted Model
+
+$$Pct.BF = 423.6901 - 407.2826 \cdot Density + 0.5089 \cdot \log(\overbrace{Age}) + 5.1896 \cdot \log(\overbrace{Abdomen})$$
+
+- A one year increase in Age results in a 0.5089% change in Pct.BF on average, holding Density and Abdomen constant.
+
+- A one centimeter increase in Abdomen results in a 5.1896% change in Pct.BF on average, holding Age and Density 
+
+- A one unit decrease in Density results in a 407.2826 change in Pct.BF on average, holding Age and Abdomen constant 
+
+---
+
+# Discussion and Conclusion
+
+- Body Density should be a factor which pay more attention to due to the huge direct effect of body density on percent body fat.
+
+- With age, percent body fat will also increase gradually, but we can effectively maintain a reasonable percent body fat by exercising the abdominal muscles.
+
+- A healthy amount of body fat is necessary for the body to function properly. While excess body fat is associated with an increased risk of heart disease,too little body fat is just as dangerous.
+
